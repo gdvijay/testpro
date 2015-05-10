@@ -1,0 +1,28 @@
+create private key:
+openssl rsa -in private_rsa.key -pubout -out public_rsa.key
+
+remove the pass phrase:
+openssl rsa -in private_rsa.key_orig -out private_rsa.key
+
+create certificate: 
+openssl req -new -x509 -key privkey.pem -out cacert.pem -days 1095
+
+create public key:
+openssl genrsa -aes128 -out public_rsa.key 2048
+
+
+http://www.akadia.com/services/ssh_test_certificate.html
+
+
+http://jmarshall.com/stuff/handling-nbio-errors-in-openssl.html
+https://www.mail-archive.com/openssl-users@openssl.org/msg58273.html
+
+
+
+openssl req \
+       -newkey rsa:2048 -nodes -keyout domain.key \
+       -x509 -days 365 -out domain.crt
+
+
+
+https://jamielinux.com/articles/2013/08/create-and-sign-ssl-certificates-certificate-authority/
