@@ -1,3 +1,12 @@
+modprobe sctp
+checksctp
+
+./config shared sctp --prefix=/usr --openssldir=/etc/ssl --libdir=lib64 shared zlib-dynamic
+sysctl -w net.sctp.auth_enable=1
+
+yum install kernel-modules-extra
+
+
 create private key:
 openssl rsa -in private_rsa.key -pubout -out public_rsa.key
 
