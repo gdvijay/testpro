@@ -58,7 +58,6 @@ void validate_argument ( vector<string>& arguments, uint8_t& transport_type, str
       exit ( 0 );
 
    }
-
    src_address = arguments[3];
    convertStrToLong ( arguments[5] , src_port );
 
