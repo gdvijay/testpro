@@ -22,6 +22,8 @@
 
 #include "socketlistener.h"
 #include "socketsender.h"
+#include <errno.h>
+#include <netinet/sctp.h>
 
 using namespace std;
 
@@ -376,7 +378,30 @@ void TransportInterface::accept()
 
 bool TransportInterface::connect()
 {  const sockaddr_storage& remote_addr = m_socket_address_dest;
-   ::connect ( m_socket, ( sockaddr* ) &remote_addr, sizeof ( sockaddr_in ) );
+
+
+   struct sockaddr* address_array = NULL;
+   address_array = ( struct sockaddr* ) new sockaddr_in[1];
+   memcpy ( ( void* ) &address_array[0], ( sockaddr* ) &remote_addr, sizeof ( sockaddr_in ) );
+
+   int retvalue = -1;
+
+   if ( m_protocol == 0 )
+   {  retvalue = ::connect ( m_socket, ( sockaddr* ) &address_array[0], sizeof ( sockaddr_in ) );
+   }
+
+   else if ( m_protocol == 1 )
+   {  sctp_assoc_t aid;
+      retvalue = ::sctp_connectx ( m_socket, ( sockaddr* ) address_array, 1, &aid );
+   }
+
+   delete [] address_array;
+
+   if ( retvalue == -1 && errno != EINPROGRESS )
+   {  cout << "connect call failed returning " << errno<< endl;
+      exit ( 0 );
+
+   }
 
    // spin until socket connects
    int ret = true;
@@ -517,9 +542,10 @@ void TransportInterface::set_sock_option()
    {  sockfd = m_passive_socket;
    }
 
+
    cout << "setting O_NONBLOCK option on the socket: " << endl;
    if ( fcntl ( sockfd, F_SETFL, O_NONBLOCK ) < 0 )
-   {  cout << "Unable to set the socket as NON-Blocking socket: " << endl;
+   {  cout << "Unable to set the socket as NON-Blocking socket: " << errno<< endl;
       exit ( 0 );
    }
 
@@ -540,8 +566,20 @@ void TransportInterface::set_sock_option()
 void TransportInterface::create_socket()
 {
 
-   int socketfd = socket ( AF_INET, SOCK_STREAM, IPPROTO_TCP );
-   if ( 0 > m_socket )
+   int socketfd = 0;
+
+
+   if ( m_protocol == 0 )
+   {  socketfd = socket ( AF_INET, SOCK_STREAM, IPPROTO_TCP );
+      cout << "creating tcp socket " << endl;
+   }
+   else if ( m_protocol == 1 )
+   {  socketfd = socket ( AF_INET, SOCK_STREAM, IPPROTO_SCTP );
+      cout << "creating sctp socket " << errno<<endl;
+
+   }
+
+   if ( -1 == socketfd )
    {  cout << "error while creating socket" << endl;
       exit ( 0 );
    }
@@ -553,10 +591,10 @@ void TransportInterface::create_socket()
    else
    {  m_passive_socket = socketfd;
    }
-
+   set_sock_option();
 
    create_sock_in_struct ( m_source_ip_str,m_socket_address_src, m_src_port );
-   set_sock_option();
+
    bind ( m_socket_address_src );
 
    if ( m_type == CLIENT )
@@ -601,14 +639,15 @@ void TransportInterface::bind ( sockaddr_storage& local_address )
 
 }
 
-void TransportInterface::init ( uint8_t transport_type, string src_address, string dest_address, uint32_t src_port, uint32_t dest_port )
-{
-   m_source_ip_str = src_address;
+void TransportInterface::init ( uint8_t transport_type, string src_address, string dest_address, uint32_t src_port, uint32_t dest_port, uint8_t protocol )
+{  m_source_ip_str = src_address;
    m_dest_ip_str = dest_address;
    m_dest_port = dest_port;
    m_src_port = src_port;
    m_type = transport_type;
+   m_protocol = protocol;
    create_socket ();
+
 
 }
 

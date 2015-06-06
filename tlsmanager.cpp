@@ -19,12 +19,29 @@
 
 #include "tlsmanager.h"
 #include "sslthreadwrapper.h"
+#include <openssl/bio.h>
 
 using namespace std;
 
 void tlsmanager::tls_accept()
 {  int ret_code = 0;
-   BIO *sbio=BIO_new_socket ( m_transport_ptr->m_socket,BIO_NOCLOSE );
+
+   BIO *sbio = 0;
+
+   if ( m_transport_ptr == 0 )
+   {  sbio=BIO_new_socket ( m_transport_ptr->m_socket,BIO_NOCLOSE );
+
+   }
+   else
+   {  sbio=BIO_new_dgram_sctp ( m_transport_ptr->m_socket,BIO_NOCLOSE );
+   }
+
+
+   if ( !sbio )
+   {  exit ( 0 );
+
+   }
+
    m_ssl=SSL_new ( m_ctx );
    SSL_set_bio ( m_ssl,sbio,sbio );
 
@@ -37,15 +54,26 @@ void tlsmanager::tls_accept()
 
 void tlsmanager::tls_connect()
 {  int err;
-   BIO *sbio;
+
    struct pollfd poll_socket_descriptor[1];
    poll_socket_descriptor[0].fd = m_transport_ptr->m_socket;
 
    //create a new SSL connection  state object.
    m_ssl = SSL_new ( m_ctx );
 
+   BIO *sbio = 0;
+
+   if ( m_transport_ptr == 0 )
+   {  sbio=BIO_new_socket ( m_transport_ptr->m_socket,BIO_NOCLOSE );
+
+   }
+   else
+   {  sbio=BIO_new_dgram_sctp ( m_transport_ptr->m_socket,BIO_NOCLOSE );
+   }
+
+
    // attach the ssl session to the socket descriptor.
-   sbio=BIO_new_socket ( m_transport_ptr->m_socket, BIO_NOCLOSE );
+   //sbio=BIO_new_socket ( m_transport_ptr->m_socket, BIO_NOCLOSE );
    SSL_set_bio ( m_ssl, sbio, sbio );
 
    int attempt = 0;
@@ -258,7 +286,7 @@ void tlsmanager::initialise_context()
    //TLS_RSA_WITH_AES_128_CBC_SHA
 
    ssl_thread_setup();
-   
+
    string cipher_list = "RC4-MD5:RC4-SHA:DES-CBC3-SHA:AES128-SHA";
 
    //SSL_library_init() registers the available SSL/TLS ciphers and digests.
@@ -274,12 +302,26 @@ void tlsmanager::initialise_context()
    //use the same SSL context for all server connections.
 
    if ( m_transport_ptr->m_type == CLIENT )
-   {  m_ctx = SSL_CTX_new ( SSLv23_client_method() );
-      SSL_CTX_set_verify ( m_ctx, SSL_VERIFY_PEER, NULL );
+   {
+
+      if ( m_transport_ptr->m_protocol ==0 )
+         m_ctx = SSL_CTX_new ( SSLv23_client_method() );
+      else
+         m_ctx = SSL_CTX_new ( DTLSv1_client_method() );
+
+      //SSL_CTX_set_verify ( m_ctx, SSL_VERIFY_PEER, NULL );
+      SSL_CTX_set_verify ( m_ctx, SSL_VERIFY_NONE, NULL );
    }
    else
-   {  m_ctx = SSL_CTX_new ( SSLv23_server_method() );
+   {
+
+      if ( m_transport_ptr->m_protocol ==0 )
+         m_ctx = SSL_CTX_new ( SSLv23_server_method() );
+      else
+         m_ctx = SSL_CTX_new ( DTLSv1_server_method() );
+
       SSL_CTX_set_verify ( m_ctx, SSL_VERIFY_PEER|SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL );
+      SSL_CTX_set_cert_verify_callback ( m_ctx,verify_certificate,0 );
    }
 
    //No callbacks set. verify_callback set specifically for this ssl remains.
@@ -301,13 +343,12 @@ void tlsmanager::initialise_context()
 
    //switch off session cache.
    SSL_CTX_set_session_cache_mode ( m_ctx, SSL_SESS_CACHE_OFF );
-   SSL_CTX_set_cert_verify_callback ( m_ctx,verify_certificate,0 );
+   //SSL_CTX_set_cert_verify_callback ( m_ctx,verify_certificate,0 );
 
 }
 
 void tlsmanager::init ( TransportInterface* transport_ptr )
-{  
-   m_transport_ptr = transport_ptr;
+{  m_transport_ptr = transport_ptr;
    initialise_context();
    feed_certificate();
    feed_key();

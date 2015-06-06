@@ -1,5 +1,5 @@
 CC = g++
-CC_FLAGS += -w -lpthread -g -lcrypto -lssl
+CC_FLAGS += -w -lpthread -g -lcrypto -lssl -lsctp 
 
 # File names
 EXEC = tls_client

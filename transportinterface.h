@@ -65,6 +65,7 @@ public:
   
   int m_socket;
   int m_passive_socket;
+  uint8_t m_protocol;
 
   uint8_t m_type;
   uint16_t m_connection_attempt;
@@ -108,7 +109,7 @@ bool send_message(const char* out_message, const ssize_t& length);
   
   static TransportInterface *get_instance ();
   void init (uint8_t transport_type, string src_address, string dest_address,
-	     uint32_t src_port, uint32_t dest_port);
+	     uint32_t src_port, uint32_t dest_port, uint8_t protocol);
   void create_socket ();
   void create_sock_in_struct (string m_source_ip_str,
 			      sockaddr_storage & m_socket_address_src,
