@@ -33,7 +33,7 @@ void tlsmanager::tls_accept()
 
    }
    else
-   {  sbio=BIO_new_dgram_sctp ( m_transport_ptr->m_socket,BIO_NOCLOSE );
+   {  //sbio=BIO_new_dgram_sctp ( m_transport_ptr->m_socket,BIO_NOCLOSE );
    }
 
 
@@ -68,7 +68,7 @@ void tlsmanager::tls_connect()
 
    }
    else
-   {  sbio=BIO_new_dgram_sctp ( m_transport_ptr->m_socket,BIO_NOCLOSE );
+   {  //sbio=BIO_new_dgram_sctp ( m_transport_ptr->m_socket,BIO_NOCLOSE );
    }
 
 
