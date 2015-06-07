@@ -28,7 +28,7 @@ void tlsmanager::tls_accept()
 
    BIO *sbio = 0;
 
-   if ( m_transport_ptr == 0 )
+   if ( m_transport_ptr->m_protocol == 0 )
    {  sbio=BIO_new_socket ( m_transport_ptr->m_socket,BIO_NOCLOSE );
 
    }
@@ -63,7 +63,7 @@ void tlsmanager::tls_connect()
 
    BIO *sbio = 0;
 
-   if ( m_transport_ptr == 0 )
+   if ( m_transport_ptr->m_protocol == 0 )
    {  sbio=BIO_new_socket ( m_transport_ptr->m_socket,BIO_NOCLOSE );
 
    }
@@ -309,8 +309,7 @@ void tlsmanager::initialise_context()
       else
          m_ctx = SSL_CTX_new ( DTLSv1_client_method() );
 
-      //SSL_CTX_set_verify ( m_ctx, SSL_VERIFY_PEER, NULL );
-      SSL_CTX_set_verify ( m_ctx, SSL_VERIFY_NONE, NULL );
+      SSL_CTX_set_verify ( m_ctx, SSL_VERIFY_PEER, NULL );
    }
    else
    {
@@ -321,7 +320,6 @@ void tlsmanager::initialise_context()
          m_ctx = SSL_CTX_new ( DTLSv1_server_method() );
 
       SSL_CTX_set_verify ( m_ctx, SSL_VERIFY_PEER|SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL );
-      SSL_CTX_set_cert_verify_callback ( m_ctx,verify_certificate,0 );
    }
 
    //No callbacks set. verify_callback set specifically for this ssl remains.
@@ -343,7 +341,7 @@ void tlsmanager::initialise_context()
 
    //switch off session cache.
    SSL_CTX_set_session_cache_mode ( m_ctx, SSL_SESS_CACHE_OFF );
-   //SSL_CTX_set_cert_verify_callback ( m_ctx,verify_certificate,0 );
+   SSL_CTX_set_cert_verify_callback ( m_ctx,verify_certificate,0 );
 
 }
 

@@ -38,11 +38,8 @@ void SocketSender::start_thread()
 
 
    if ( m_transport_ptr->m_type == CLIENT )
-
    {
-
       cout << "Initiating connect ......" << endl;
-
       bool ret = m_transport_ptr->connect();
 
       if ( !ret )
