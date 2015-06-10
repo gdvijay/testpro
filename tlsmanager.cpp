@@ -23,6 +23,24 @@
 
 using namespace std;
 
+void tlsmanager::tls_shutdown()
+{  int ret_code = SSL_shutdown ( m_ssl );
+   cout << "SSL_shutdown() returned with code: " << ret_code << endl;
+}
+
+void tlsmanager::free_ssl()
+{  SSL_free ( m_ssl );
+}
+
+void tlsmanager::free_ssl_ctx()
+{  SSL_CTX_free ( m_ctx );
+
+}
+
+void tlsmanager::write ( char* buf, int len )
+{  SSL_write ( m_ssl, buf, len );
+}
+
 void tlsmanager::tls_accept()
 {  int ret_code = 0;
 
@@ -202,6 +220,26 @@ void tlsmanager::feed_key()
 
 }
 
+void tlsmanager::print_peer_certificates()
+{  X509 * x509_cert = SSL_get_peer_certificate ( m_ssl );
+
+   if ( !x509_cert )
+   {  return;
+   }
+
+   char subject[256] = "";
+   char issuer [256] = "";
+
+   X509_NAME_oneline ( X509_get_issuer_name ( x509_cert ), issuer,  sizeof ( issuer ) ); //extract issuer
+   X509_NAME_oneline ( X509_get_subject_name ( x509_cert ), subject, sizeof ( subject ) ); //extract subject
+   cout << " certificate exists, issuer: "<<issuer<<" subject: "<<subject << endl; //trace it
+
+
+   cout << "peer cipher list" << SSL_CIPHER_get_name ( SSL_get_current_cipher ( m_ssl ) ) << endl;
+
+
+}
+
 void tlsmanager::feed_certificate()
 {
 
@@ -287,7 +325,10 @@ void tlsmanager::initialise_context()
 
    ssl_thread_setup();
 
+   //TLS_RSA_WITH_NULL_SHA
+
    string cipher_list = "RC4-MD5:RC4-SHA:DES-CBC3-SHA:AES128-SHA";
+   //string cipher_list = "NULL";
 
    //SSL_library_init() registers the available SSL/TLS ciphers and digests.
    SSL_library_init();
@@ -333,6 +374,8 @@ void tlsmanager::initialise_context()
                ( SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 ) ;
 
    SSL_CTX_set_options ( m_ctx, opts );
+   //SSL_CTX_set_options(m_ctx, SSL_OP_NO_COMPRESSION);
+
    SSL_CTX_set_mode ( m_ctx, SSL_MODE_ENABLE_PARTIAL_WRITE | SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER );
 
    if ( SSL_CTX_set_cipher_list ( m_ctx, cipher_list.c_str() ) != 1 )

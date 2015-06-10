@@ -32,6 +32,12 @@ bool socketlistener::process_listening_socket()
       tlsmanager *ptr = new tlsmanager();
       ptr->init ( m_transport_ptr );
       ptr->tls_accept();
+      ptr->print_peer_certificates();
+      sleep ( 20 );
+      ptr->tls_shutdown();
+      ptr->free_ssl();
+      ptr->free_ssl_ctx();
+
 
    }
    else if ( m_poll_socket_descriptors[LISTEN_SOCKET_INDEX].revents & POLLNVAL )

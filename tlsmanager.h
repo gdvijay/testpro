@@ -59,6 +59,13 @@ public:
   TransportInterface* m_transport_ptr;
   void tls_connect();
   void tls_accept();
+  
+  void tls_shutdown();
+  void free_ssl();
+  void free_ssl_ctx();
+  void write(char* buf, int len);
+  void print_peer_certificates();
+  
   static string get_error_string();
   
   void check_key_cert_consistency();

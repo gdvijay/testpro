@@ -38,8 +38,7 @@ void SocketSender::start_thread()
 
 
    if ( m_transport_ptr->m_type == CLIENT )
-   {
-      cout << "Initiating connect ......" << endl;
+   {  cout << "Initiating connect ......" << endl;
       bool ret = m_transport_ptr->connect();
 
       if ( !ret )
@@ -74,6 +73,20 @@ void SocketSender::start_thread()
    {  tlsmanager *ptr = new tlsmanager();
       ptr->init ( m_transport_ptr );
       ptr->tls_connect();
+
+      ptr->print_peer_certificates();
+
+
+      char* message_buf = "client_message";
+      ptr->write ( message_buf, 10 );
+
+      sleep ( 10 );
+      ptr->tls_shutdown();
+      ptr->free_ssl();
+      ptr->free_ssl_ctx();
+
+
+
    }
 
 }
