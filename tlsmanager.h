@@ -50,31 +50,34 @@
 
 class tlsmanager
 {
-  SSL_CTX*    m_ctx; 
-  SSL* m_ssl;
-  
-  
+  SSL_CTX *m_ctx;
+  SSL *m_ssl;
+
+
 public:
-  
-  TransportInterface* m_transport_ptr;
-  void tls_connect();
-  void tls_accept();
-  
-  void tls_shutdown();
-  void free_ssl();
-  void free_ssl_ctx();
-  void write(char* buf, int len);
-  void print_peer_certificates();
-  
-  static string get_error_string();
-  
-  void check_key_cert_consistency();
-  void feed_key();
-  void feed_certificate();
-  void initialise_context();
-  void init(TransportInterface* transport_ptr);
-  
-  
+
+    TransportInterface * m_transport_ptr;
+  void tls_connect ();
+  void tls_accept ();
+
+  void tls_shutdown ();
+  void free_ssl ();
+  void free_ssl_ctx ();
+  void write (char *buf, int len);
+  void print_peer_certificates ();
+
+  static string get_error_string ();
+
+
+  void feed_ca_cert ();
+
+  void check_key_cert_consistency ();
+  void feed_key ();
+  void feed_certificate ();
+  void initialise_context ();
+  void init (TransportInterface * transport_ptr);
+
+
 };
 
 #endif // TLSMANAGER_H

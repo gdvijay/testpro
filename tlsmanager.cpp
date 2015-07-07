@@ -191,7 +191,7 @@ void tlsmanager::check_key_cert_consistency()
 
 void tlsmanager::feed_key()
 {  std::stringstream file_content;
-   string key_file_path = "domain.key";
+   string key_file_path = "diameter_cert_keys/diameter.key.pem";
    std::ifstream in ( key_file_path.c_str(), std::ios_base::in );
    file_content << in.rdbuf();
    std::string key_file_content = file_content.str();
@@ -244,7 +244,7 @@ void tlsmanager::feed_certificate()
 {
 
    std::stringstream file_content;
-   string cert_file_path = "domain.crt";
+   string cert_file_path = "diameter_cert_keys/diameter.crt";
    std::ifstream in ( cert_file_path.c_str(), std::ios_base::in );
    file_content << in.rdbuf();
    std::string cert_file_content = file_content.str();
@@ -286,6 +286,89 @@ void tlsmanager::feed_certificate()
 
 static int verify_certificate ( X509_STORE_CTX *x509_store_ctx, void* arg )
 {  return 1;
+
+}
+
+void tlsmanager::feed_ca_cert()
+{
+
+   //open the CA cert at local path.
+   std::stringstream file_content;
+   string cert_file_path = "rootca_key/ca.cert.pem";
+   std::ifstream in ( cert_file_path.c_str(), std::ios_base::in );
+   file_content << in.rdbuf();
+   std::string cert_file_content = file_content.str();
+
+   X509* x509_cert = NULL;
+
+   //convert certificate
+   BIO* bio  = BIO_new_mem_buf ( ( void* ) cert_file_content.c_str(), static_cast<unsigned> ( cert_file_content.size() ) );
+   if ( 0 == bio )
+   {  cout << "Conversion from PEM format for " << " certificate failed." << endl;
+      exit ( 0 );
+   }
+
+   x509_cert = PEM_read_bio_X509 ( bio, NULL, NULL, NULL );
+
+   if ( 0 == x509_cert )
+   {  cout << "PEM_read_bio_X509() failed, OpenSSL error queue: \<<"<<endl;
+      exit ( 0 );
+   }
+
+   BIO_free ( bio );
+
+   char subject[256] = "";
+   char issuer [256] = "";
+
+   X509_NAME_oneline ( X509_get_issuer_name ( x509_cert ), issuer,  sizeof ( issuer ) ); //extract issuer
+   X509_NAME_oneline ( X509_get_subject_name ( x509_cert ), subject, sizeof ( subject ) ); //extract subject
+   cout << " CA certificate exists, issuer: "<<issuer<<" subject: "<<subject << endl; //trace it
+
+
+   //write to CA crt at current directory to a /tmp
+
+   string tls_cert_file;
+   stringstream strm;
+   strm
+         << "/tmp"
+         << "/diameterRSA_CACert_"
+         << ::getpid()
+         << ".pem";
+
+   tls_cert_file = strm.str();
+
+   ofstream fileOp1;
+   fileOp1.open ( tls_cert_file.c_str() );
+
+   if ( fileOp1.is_open() )
+   {  fileOp1<<cert_file_content<< std::flush;
+   }
+   else
+   {  cout << "failed to open the file:";
+   }
+   fileOp1.close();
+
+   X509_STORE *store = X509_STORE_new();
+
+   if ( 0 == store )
+   {  cout << "function X509_STORE_new() failed" << endl;
+   }
+
+   //IPDP_THROW_RUNTIME("function X509_STORE_new() failed, OpenSSL error queue: \""<<TlsManager::get_tls_error_queue()<<"\"."); }
+
+
+
+   if ( X509_STORE_load_locations ( store, tls_cert_file.c_str(), 0 ) != 1 )
+   {  X509_STORE_free ( store );
+      cout << "function X509_STORE_load_locations() failed" << endl;
+
+      /*
+      IPDP_THROW_RUNTIME ( "function X509_STORE_load_locations() failed, OpenSSL error queue: \""<<
+                           TlsManager::get_tls_error_queue() <<"\"." );
+      */
+
+   }
+   SSL_CTX_set_cert_store ( m_ctx, store ); // returns 'void'
 
 }
 
@@ -384,7 +467,7 @@ void tlsmanager::initialise_context()
 
    //switch off session cache.
    SSL_CTX_set_session_cache_mode ( m_ctx, SSL_SESS_CACHE_OFF );
-   SSL_CTX_set_cert_verify_callback ( m_ctx,verify_certificate,0 );
+   //SSL_CTX_set_cert_verify_callback ( m_ctx,verify_certificate,0 );
 
 }
 
@@ -394,4 +477,6 @@ void tlsmanager::init ( TransportInterface* transport_ptr )
    feed_certificate();
    feed_key();
    check_key_cert_consistency();
+   feed_ca_cert();
+
 }
